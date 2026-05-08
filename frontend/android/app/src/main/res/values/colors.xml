@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#0D5C63</color>
+    <color name="primary_dark">#07393C</color>
+    <color name="accent">#F4B942</color>
+    <color name="background_light">#F4F1DE</color>
+    <color name="background_app">#F6F8FA</color>
+    <color name="background_dark">#101820</color>
+    <color name="camera_surface">#16232B</color>
+    <color name="card_stroke">#D9E2EC</color>
+    <color name="surface_dark">#1B2A34</color>
+    <color name="text_primary">#1F2933</color>
+    <color name="text_secondary">#52606D</color>
+    <color name="camera_text_secondary">#D9E2EC</color>
+    <color name="error_red">#B42318</color>
+    <color name="white">#FFFFFF</color>
+</resources>

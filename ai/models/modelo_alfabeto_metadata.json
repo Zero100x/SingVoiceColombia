@@ -1,0 +1,41 @@
+{
+  "image_size": [
+    96,
+    96
+  ],
+  "channels": 2,
+  "classes": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "i",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y"
+  ],
+  "split_seed": 42,
+  "model_seed": 2026,
+  "architecture": "cnn_extra2_relu_dropout02",
+  "architecture_note": "PDF idea: base CNN + Dropout 0.2 + two extra convolution/pooling layers",
+  "input_value_range": "0-255",
+  "normalization": "Rescaling(1/255) inside model",
+  "preprocessing": "center ROI crop 0.75, channel 0 = grayscale luma, channel 1 = Sobel edge magnitude",
+  "roi_ratio": 0.75,
+  "test_accuracy": 0.729264497756958,
+  "test_loss": 0.796556293964386,
+  "tflite_model": "app_android\\app\\src\\main\\assets\\modelo_alfabeto.tflite"
+}

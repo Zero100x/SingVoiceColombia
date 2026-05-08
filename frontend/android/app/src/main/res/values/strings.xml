@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SingVoice Colombia</string>
+    <string name="project_title">SingVoice Colombia</string>
+    <string name="project_subtitle">Traductor del alfabeto de Lengua de Senas Colombiana a texto y voz.</string>
+    <string name="camera_preview_label">Camara de reconocimiento</string>
+    <string name="result_card_title">Letra detectada</string>
+    <string name="result_card_title_static">Letra detectada</string>
+    <string name="result_card_title_dynamic">Sena detectada</string>
+    <string name="detected_letter_empty">-</string>
+    <string name="confidence_empty">Confianza: --%</string>
+    <string name="confidence_value">Confianza: %.1f%%</string>
+    <string name="camera_enable_button">Activar camara</string>
+    <string name="camera_disable_button">Desactivar camara</string>
+    <string name="camera_switch_button">Cambiar camara</string>
+    <string name="camera_unavailable_message">Esta camara no esta disponible en el dispositivo.</string>
+    <string name="status_waiting">Esperando sena...</string>
+    <string name="status_recognizing">Reconociendo...</string>
+    <string name="status_detected">Sena detectada</string>
+    <string name="status_no_hand_detected">Ubica la mano en el centro de la camara</string>
+    <string name="status_unrecognized">Sena no reconocida</string>
+    <string name="status_model_pending">Modelo pendiente: agrega modelo_alfabeto.tflite en assets</string>
+    <string name="status_dynamic_model_pending">Modelo dinamico pendiente: entrena modelo_dinamico.tflite</string>
+    <string name="status_dynamic_collecting">Recolectando movimiento: %1$d/%2$d</string>
+    <string name="recognition_mode_static">Modo: alfabeto</string>
+    <string name="recognition_mode_dynamic">Modo: movimiento</string>
+    <string name="voice_no_result_message">Primero detecta una letra para reproducirla.</string>
+    <string name="voice_letter_result">Letra %1$s</string>
+    <string name="voice_sign_result">Sena %1$s</string>
+    <string name="translate_button">Traducir</string>
+    <string name="capture_dataset_button">Capturar dataset</string>
+    <string name="view_progress_button">Ver progreso</string>
+    <string name="about_project_button">Acerca del proyecto</string>
+    <string name="back_button_label">Volver</string>
+    <string name="accept_button_label">Aceptar</string>
+
+    <string name="login_title">Iniciar sesion</string>
+    <string name="login_subtitle">Accede al prototipo y gestiona el uso del sistema segun tu rol.</string>
+    <string name="login_email_label">Correo electronico</string>
+    <string name="login_email_hint">correo@signvoice.com</string>
+    <string name="login_password_label">Contrasena</string>
+    <string name="login_password_hint">Ingresa tu contrasena</string>
+    <string name="login_button">Iniciar sesion</string>
+    <string name="login_terms_checkbox">He leido y acepto los terminos y condiciones para el uso de la aplicacion y la autorizacion de captura de imagenes o videos con fines de construccion del dataset del proyecto.</string>
+    <string name="login_terms_link">Ver terminos y condiciones completos</string>
+    <string name="login_fields_required_error">Debes completar el correo y la contrasena.</string>
+    <string name="login_invalid_email_error">Ingresa un correo electronico valido.</string>
+    <string name="login_terms_required_error">Debes aceptar los terminos y condiciones para continuar.</string>
+    <string name="login_invalid_credentials_error">Credenciales incorrectas. Verifica el correo y la contrasena.</string>
+    <string name="login_register_link">Crear una cuenta de prueba</string>
+
+    <string name="register_title">Registro de usuario</string>
+    <string name="register_subtitle">Crea un usuario local para seguir probando el prototipo sin backend.</string>
+    <string name="register_name_label">Nombre</string>
+    <string name="register_name_hint">Ingresa tu nombre</string>
+    <string name="register_confirm_password_label">Confirmar contrasena</string>
+    <string name="register_confirm_password_hint">Repite tu contrasena</string>
+    <string name="register_button">Registrarse</string>
+    <string name="register_login_link">Volver al inicio de sesion</string>
+    <string name="register_fields_required_error">Debes completar nombre, correo, contrasena y confirmacion.</string>
+    <string name="register_password_length_error">La contrasena debe tener al menos 8 caracteres.</string>
+    <string name="register_password_match_error">La confirmacion de contrasena no coincide.</string>
+    <string name="register_generic_error">No fue posible completar el registro local.</string>
+    <string name="register_success_message">Usuario registrado localmente. Ahora puedes iniciar sesion.</string>
+
+    <string name="show_password_action">Mostrar</string>
+    <string name="hide_password_action">Ocultar</string>
+
+    <string name="terms_screen_title">Terminos y condiciones de uso y consentimiento de captura</string>
+    <string name="terms_close_button">Volver al inicio de sesion</string>
+    <string name="terms_screen_body">El presente sistema corresponde a un prototipo academico desarrollado en el contexto de un proyecto universitario orientado a la traduccion de Lengua de Senas Colombiana y a la futura construccion de un dataset de apoyo para investigacion.\n\nAl ingresar a la aplicacion, la persona usuaria declara que ha leido esta informacion y que acepta usar el sistema de manera responsable, con fines academicos y de validacion del proyecto.\n\nLa funcionalidad de captura de imagenes o videos esta destinada especialmente al modulo de captura del dataset. Su uso permite recolectar material visual que podra ser utilizado unicamente para actividades asociadas al proyecto, incluyendo procesos de organizacion, analisis, entrenamiento y evaluacion academica del dataset.\n\nLa autorizacion otorgada comprende el uso de imagenes o videos solo dentro del contexto del proyecto, del entorno universitario y de investigacion relacionado. No autoriza usos comerciales, ni cesiones externas ajenas a la finalidad academica descrita.\n\nEl equipo del proyecto asume el compromiso de promover un tratamiento responsable del material capturado, procurando medidas de privacidad, resguardo y uso pertinente conforme al alcance del prototipo y de las actividades de investigacion.\n\nLa aceptacion de estos terminos es voluntaria, pero obligatoria antes de ingresar al sistema. Si no existe conformidad con estas condiciones, la persona usuaria debe abstenerse de iniciar sesion o de utilizar el modulo de captura del dataset.</string>
+
+    <string name="session_welcome_label">Sesion activa: %1$s</string>
+    <string name="session_role_label">Rol: %1$s</string>
+    <string name="session_role_admin">Administrador</string>
+    <string name="session_role_user">Usuario general</string>
+    <string name="session_access_admin">Tu perfil puede ingresar a todos los modulos, incluida la captura del dataset.</string>
+    <string name="session_access_user">Tu perfil puede usar el sistema, pero no tiene acceso al modulo de captura del dataset.</string>
+    <string name="logout_button">Cerrar sesion</string>
+    <string name="admin_only_dataset_title">Acceso restringido</string>
+    <string name="admin_only_dataset_message">Solo el administrador autorizado puede acceder al modulo de captura del dataset.</string>
+
+    <string name="dataset_capture_title">Capturar dataset</string>
+    <string name="dataset_capture_hint">Este modulo permite registrar cualquier sena manualmente. Empieza con una prueba simple como etiqueta: hola y significado: hola, y luego agrega nuevas senas segun lo necesites.</string>
+    <string name="dataset_label_field">Etiqueta o nombre de la sena</string>
+    <string name="dataset_label_hint">Ejemplo: saludo_narino</string>
+    <string name="dataset_meaning_field">Significado en espanol</string>
+    <string name="dataset_meaning_hint">Ejemplo: hola, buenos dias</string>
+    <string name="dataset_capture_image_button">Capturar imagen</string>
+    <string name="dataset_capture_video_button">Grabar video</string>
+    <string name="dataset_capture_initial_summary">Prueba inicial sugerida: crea o edita la sena hola con significado hola para dejar listo el flujo base.</string>
+    <string name="dataset_capture_summary">Sena: %1$s\nSignificado: %2$s\nImagenes guardadas: %3$d\nVideos guardados: %4$d</string>
+    <string name="dataset_fields_required_error">Debes escribir la etiqueta de la sena y su significado.</string>
+    <string name="dataset_label_invalid_error">La etiqueta de la sena debe contener letras o numeros validos.</string>
+    <string name="dataset_video_saved_message">Video guardado correctamente en el dataset local.</string>
+    <string name="dataset_video_app_missing_error">No se encontro una aplicacion disponible para grabar video.</string>
+    <string name="dataset_selected_sign_label">Sena: %1$s</string>
+    <string name="dataset_selected_sign_meaning">Significado: %1$s</string>
+    <string name="dataset_media_count_label">Imagenes: %1$d | Videos: %2$d</string>
+    <string name="take_photo_button">Tomar foto</string>
+    <string name="camera_permission_required_title">Permiso requerido</string>
+    <string name="camera_permission_required_message">La aplicacion necesita permiso de camara para reconocer las senas.</string>
+    <string name="camera_start_error">No fue posible iniciar la camara.</string>
+    <string name="photo_saved_message">Foto guardada: %1$s</string>
+    <string name="photo_save_error">Ocurrio un error al guardar la foto.</string>
+
+    <string name="progress_title">Progreso del dataset</string>
+    <string name="total_media_label">Archivos capturados: %1$d | Senas registradas: %2$d</string>
+    <string name="progress_future_classes_hint">El prototipo inicia con la sena hola, pero desde este punto ya puedes registrar nuevas senas dinamicas con su significado y revisar su progreso local.</string>
+    <string name="progress_item_meaning_label">Significado: %1$s</string>
+    <string name="progress_item_count_label">Imagenes: %1$d | Videos: %2$d</string>
+
+    <string name="translate_title">Prueba inicial de traduccion</string>
+    <string name="translate_preview_body">Esta vista deja preparada una base sencilla para probar una sola sena al inicio. Aqui seleccionas una muestra del dataset, cargas su metadata y simulas la traduccion mientras se define la futura integracion del reconocimiento real.</string>
+    <string name="translate_sample_picker_title">Selecciona la sena de prueba</string>
+    <string name="translate_load_sample_button">Cargar sena seleccionada</string>
+    <string name="translate_sample_empty">Todavia no has cargado una muestra. Puedes empezar con la sena hola.</string>
+    <string name="translate_sample_loaded">Sena cargada: %1$s\nSignificado esperado: %2$s\nImagenes: %3$d | Videos: %4$d\nTipo de muestra disponible: %5$s</string>
+    <string name="translate_empty_result">Aqui aparecera el significado traducido.</string>
+    <string name="translate_status_idle">Sin prueba activa. Selecciona una sena y carga la muestra para continuar.</string>
+    <string name="translate_status_sample_loaded">Muestra cargada. El siguiente paso es ejecutar la traduccion simulada.</string>
+    <string name="translate_status_active">Prueba completada. Sena: %1$s | Confianza: %2$.2f | Fuente: %3$s</string>
+    <string name="translate_start_analysis">Probar traduccion</string>
+    <string name="translate_speak_button">Reproducir voz</string>
+    <string name="translate_integration_hint">Punto de integracion futuro: TranslationService define la interfaz para el reconocimiento real, FakeRecognitionService es solo temporal, y DatasetStorageManager centraliza la metadata local de cada sena.</string>
+    <string name="translate_voice_empty_message">Primero genera un resultado de prueba para reproducirlo.</string>
+
+    <string name="about_project_title">Acerca del proyecto</string>
+    <string name="about_project_body">Esta aplicacion hace parte de un proyecto de grado orientado a traducir Lengua de Senas Colombiana a texto y voz. En esta fase se prioriza una base realista: acceso con roles, captura organizada del dataset y una prueba inicial con una sola sena para preparar la futura integracion del reconocimiento real.</string>
+</resources>

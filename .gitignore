@@ -1,0 +1,88 @@
+# SingVoiceColombia - Git ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Virtual environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+.venv-*/
+venv/
+env/
+ENV/
+
+# Logs and temporary files
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Operating systems and IDEs
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Android / Gradle
+.gradle/
+**/.gradle/
+**/build/
+**/captures/
+**/local.properties
+*.hprof
+*.jks
+*.keystore
+
+# Machine learning artifacts
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.weights
+*.weights.h5
+*.pb
+*.onnx
+*.tflite
+*.keras
+ai/models/**
+!ai/models/
+!ai/models/README.md
+!ai/models/.gitkeep
+!ai/models/*.json
+!ai/models/*.csv
+!ai/models/*.txt
+
+# Datasets and local captures
+datasets/**
+!datasets/
+!datasets/README.md
+!datasets/.gitkeep
+!datasets/static_signs/
+!datasets/static_signs/.gitkeep
+!datasets/dynamic_signs/
+!datasets/dynamic_signs/.gitkeep
+!datasets/archives/
+!datasets/archives/.gitkeep
+
+# Generated documentation output
+docs/_build/
+site/

@@ -1,0 +1,6 @@
+opencv-python>=4.9
+numpy>=1.26
+scikit-learn>=1.4
+scikit-image>=0.22
+tensorflow>=2.16
+joblib>=1.3
