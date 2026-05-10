@@ -1,3 +1,5 @@
+import argparse
+import time
 from pathlib import Path
 
 import cv2
@@ -12,7 +14,52 @@ LABELS_FILE = PROJECT_ROOT / "frontend" / "android" / "app" / "src" / "main" / "
 ROI_RATIO = 0.75
 CHANNELS_PER_FRAME = 2
 CONFIDENCE_THRESHOLD = 0.65
+MARGIN_THRESHOLD = 0.18
+HAND_MIN_AREA_RATIO = 0.015
 SMOOTHING_WINDOW = 4
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Usa el modelo dinamico TFLite con la camara seleccionada.",
+    )
+    parser.add_argument(
+        "--camara",
+        type=int,
+        default=None,
+        help="Indice de camara a usar. Ejemplo: --camara 1",
+    )
+    return parser.parse_args()
+
+
+def abrir_camara(indice_preferido=None):
+    backends = [
+        (cv2.CAP_DSHOW, "DirectShow"),
+        (cv2.CAP_MSMF, "Media Foundation"),
+        (cv2.CAP_ANY, "Automatico"),
+    ]
+    indices = [indice_preferido] if indice_preferido is not None else range(4)
+
+    for indice in indices:
+        for backend, nombre_backend in backends:
+            cap = cv2.VideoCapture(indice, backend)
+            if not cap.isOpened():
+                cap.release()
+                continue
+
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+            for _ in range(20):
+                ret, frame = cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    print(f"Camara activa: indice {indice} ({nombre_backend})")
+                    return cap
+                time.sleep(0.05)
+
+            cap.release()
+
+    return None
 
 
 def cargar_labels():
@@ -41,6 +88,32 @@ def obtener_roi(frame):
     x2 = x1 + size
     y2 = y1 + size
     return frame[y1:y2, x1:x2], (x1, y1, x2, y2)
+
+
+def hay_mano_en_roi(frame):
+    suavizado = cv2.GaussianBlur(frame, (7, 7), 0)
+    ycrcb = cv2.cvtColor(suavizado, cv2.COLOR_BGR2YCrCb)
+    mascara = cv2.inRange(
+        ycrcb,
+        np.array([0, 133, 77], dtype=np.uint8),
+        np.array([255, 173, 127], dtype=np.uint8),
+    )
+
+    kernel = np.ones((5, 5), dtype=np.uint8)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_OPEN, kernel, iterations=1)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    contornos, _ = cv2.findContours(
+        mascara,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE,
+    )
+    if not contornos:
+        return False
+
+    area_mayor = cv2.contourArea(max(contornos, key=cv2.contourArea))
+    area_total = frame.shape[0] * frame.shape[1]
+    return (area_mayor / area_total) >= HAND_MIN_AREA_RATIO
 
 
 def crear_canal_bordes(imagen):
@@ -97,7 +170,18 @@ def suavizar(predicciones):
     return label, float(np.mean(confidences))
 
 
+def mejor_prediccion(probabilities):
+    order = np.argsort(probabilities)[::-1]
+    best_index = int(order[0])
+    second_index = int(order[1]) if len(order) > 1 else best_index
+    confidence = float(probabilities[best_index])
+    margin = confidence - float(probabilities[second_index])
+    return best_index, confidence, margin
+
+
 def main():
+    args = parse_args()
+
     if not MODEL_FILE.exists():
         raise FileNotFoundError(
             "No existe el modelo dinamico TFLite. "
@@ -116,9 +200,12 @@ def main():
     channels = int(input_shape[3])
     sequence_length = max(1, channels // CHANNELS_PER_FRAME)
 
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: no se puede abrir la camara")
+    cap = abrir_camara(args.camara)
+    if cap is None:
+        if args.camara is None:
+            print("Error: no se pudo leer video desde ninguna camara")
+        else:
+            print(f"Error: no se pudo leer video desde la camara {args.camara}")
         return
 
     buffer_frames = []
@@ -137,42 +224,55 @@ def main():
 
             frame = cv2.flip(frame, 1)
             roi, roi_box = obtener_roi(frame)
-            buffer_frames.append(preparar_frame(roi, height, width))
-
-            if len(buffer_frames) > sequence_length:
-                buffer_frames.pop(0)
-
-            sample, required_frames = preparar_input(buffer_frames, input_details)
             label = ""
             confidence = 0.0
             recognized = False
+            sample = None
+            required_frames = sequence_length
 
-            if sample is not None:
-                interpreter.set_tensor(input_details["index"], sample)
-                interpreter.invoke()
+            if not hay_mano_en_roi(roi):
+                buffer_frames.clear()
+                predicciones_recientes.clear()
+                label = "SIN MANO"
+            else:
+                buffer_frames.append(preparar_frame(roi, height, width))
 
-                output = interpreter.get_tensor(output_details["index"])[0]
-                probabilities = softmax(output)
-                best_index = int(np.argmax(probabilities))
-                confidence = float(probabilities[best_index])
-                label = labels[best_index] if best_index < len(labels) else "?"
+                if len(buffer_frames) > sequence_length:
+                    buffer_frames.pop(0)
 
-                predicciones_recientes.append((label, confidence))
-                if len(predicciones_recientes) > SMOOTHING_WINDOW:
-                    predicciones_recientes.pop(0)
+                sample, required_frames = preparar_input(buffer_frames, input_details)
 
-                label, confidence = suavizar(predicciones_recientes)
-                recognized = confidence >= CONFIDENCE_THRESHOLD
+                if sample is not None:
+                    interpreter.set_tensor(input_details["index"], sample)
+                    interpreter.invoke()
+
+                    output = interpreter.get_tensor(output_details["index"])[0]
+                    probabilities = softmax(output)
+                    best_index, confidence, margin = mejor_prediccion(probabilities)
+                    label = labels[best_index] if best_index < len(labels) else "?"
+
+                    if confidence >= CONFIDENCE_THRESHOLD and margin >= MARGIN_THRESHOLD:
+                        predicciones_recientes.append((label, confidence))
+                        if len(predicciones_recientes) > SMOOTHING_WINDOW:
+                            predicciones_recientes.pop(0)
+
+                        label, confidence = suavizar(predicciones_recientes)
+                        recognized = confidence >= CONFIDENCE_THRESHOLD
+                    else:
+                        label = "SIN CONFIANZA"
 
             x1, y1, x2, y2 = roi_box
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(frame, (0, 0), (720, 145), (0, 0, 0), -1)
 
-            if sample is None:
+            if label == "SIN MANO":
+                text = label
+                color = (0, 165, 255)
+            elif sample is None:
                 text = f"Recolectando movimiento: {len(buffer_frames)}/{required_frames}"
                 color = (0, 165, 255)
             else:
-                text = label if recognized else "SENA DINAMICA NO RECONOCIDA"
+                text = label if recognized else label
                 color = (0, 255, 0) if recognized else (0, 165, 255)
 
             cv2.putText(

@@ -1,7 +1,9 @@
+import argparse
 import cv2
 import joblib
 import numpy as np
 import os
+import time
 from pathlib import Path
 from skimage.feature import hog
 
@@ -12,7 +14,25 @@ MODEL_FILE = MODELS_DIR / "modelo_senna.pkl"
 ENCODER_FILE = MODELS_DIR / "encoder_senna.pkl"
 ROI_RATIO = 0.75
 CONFIDENCE_THRESHOLD = 0.45
+MARGIN_THRESHOLD = 0.18
+HAND_MIN_AREA_RATIO = 0.015
 SMOOTHING_WINDOW = 10
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Usa el modelo clasico con la camara seleccionada.",
+    )
+    parser.add_argument(
+        "--camara",
+        type=int,
+        default=None,
+        help="Indice de camara a usar. Ejemplo: --camara 1",
+    )
+    return parser.parse_args()
+
+
+args = parse_args()
 
 
 if not os.path.exists(MODEL_FILE) or not os.path.exists(ENCODER_FILE):
@@ -72,6 +92,32 @@ def obtener_roi(frame):
     return frame[y1:y2, x1:x2], (x1, y1, x2, y2)
 
 
+def hay_mano_en_roi(frame):
+    suavizado = cv2.GaussianBlur(frame, (7, 7), 0)
+    ycrcb = cv2.cvtColor(suavizado, cv2.COLOR_BGR2YCrCb)
+    mascara = cv2.inRange(
+        ycrcb,
+        np.array([0, 133, 77], dtype=np.uint8),
+        np.array([255, 173, 127], dtype=np.uint8),
+    )
+
+    kernel = np.ones((5, 5), dtype=np.uint8)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_OPEN, kernel, iterations=1)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    contornos, _ = cv2.findContours(
+        mascara,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE,
+    )
+    if not contornos:
+        return False
+
+    area_mayor = cv2.contourArea(max(contornos, key=cv2.contourArea))
+    area_total = frame.shape[0] * frame.shape[1]
+    return (area_mayor / area_total) >= HAND_MIN_AREA_RATIO
+
+
 def suavizar_prediccion(predicciones):
     if not predicciones:
         return "", 0.0
@@ -82,10 +128,52 @@ def suavizar_prediccion(predicciones):
     return label, float(np.mean(confidence_values))
 
 
-cap = cv2.VideoCapture(0)
+def mejor_prediccion(probabilidades):
+    orden = np.argsort(probabilidades)[::-1]
+    mejor = int(orden[0])
+    segunda = int(orden[1]) if len(orden) > 1 else mejor
+    confianza = float(probabilidades[mejor])
+    margen = confianza - float(probabilidades[segunda])
+    return mejor, confianza, margen
 
-if not cap.isOpened():
-    print("Error: no se puede abrir la camara")
+
+def abrir_camara(indice_preferido=None):
+    backends = [
+        (cv2.CAP_DSHOW, "DirectShow"),
+        (cv2.CAP_MSMF, "Media Foundation"),
+        (cv2.CAP_ANY, "Automatico"),
+    ]
+    indices = [indice_preferido] if indice_preferido is not None else range(4)
+
+    for indice in indices:
+        for backend, nombre_backend in backends:
+            cap = cv2.VideoCapture(indice, backend)
+            if not cap.isOpened():
+                cap.release()
+                continue
+
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+            for _ in range(20):
+                ret, frame = cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    print(f"Camara activa: indice {indice} ({nombre_backend})")
+                    return cap
+                time.sleep(0.05)
+
+            cap.release()
+
+    return None
+
+
+cap = abrir_camara(args.camara)
+
+if cap is None:
+    if args.camara is None:
+        print("Error: no se pudo leer video desde ninguna camara")
+    else:
+        print(f"Error: no se pudo leer video desde la camara {args.camara}")
     exit()
 
 
@@ -103,20 +191,26 @@ while True:
     roi, roi_box = obtener_roi(frame)
 
     try:
-        features = extraer_caracteristicas(roi)
-        x_sample = features.reshape(1, -1)
+        if not hay_mano_en_roi(roi):
+            predicciones_recientes.clear()
+            prediccion = "SIN MANO"
+            confianza = 0.0
+        else:
+            features = extraer_caracteristicas(roi)
+            x_sample = features.reshape(1, -1)
 
-        pred_idx = int(model.predict(x_sample)[0])
-        pred_proba = model.predict_proba(x_sample)[0]
+            pred_proba = model.predict_proba(x_sample)[0]
+            pred_idx, confianza, margen = mejor_prediccion(pred_proba)
+            prediccion = str(classes[pred_idx])
 
-        prediccion = str(classes[pred_idx])
-        confianza = float(pred_proba[pred_idx])
+            if confianza >= CONFIDENCE_THRESHOLD and margen >= MARGIN_THRESHOLD:
+                predicciones_recientes.append((prediccion, confianza))
+                if len(predicciones_recientes) > SMOOTHING_WINDOW:
+                    predicciones_recientes.pop(0)
 
-        predicciones_recientes.append((prediccion, confianza))
-        if len(predicciones_recientes) > SMOOTHING_WINDOW:
-            predicciones_recientes.pop(0)
-
-        prediccion, confianza = suavizar_prediccion(predicciones_recientes)
+                prediccion, confianza = suavizar_prediccion(predicciones_recientes)
+            else:
+                prediccion = "SIN CONFIANZA"
     except Exception as error:
         prediccion = "Error"
         confianza = 0.0
@@ -136,8 +230,12 @@ while True:
 
     cv2.rectangle(frame, (0, 0), (560, 125), (0, 0, 0), -1)
 
-    color = (0, 255, 0) if confianza >= CONFIDENCE_THRESHOLD else (0, 165, 255)
-    etiqueta = prediccion.upper() if confianza >= CONFIDENCE_THRESHOLD else "SIN CONFIANZA"
+    reconocido = (
+        prediccion not in {"SIN MANO", "SIN CONFIANZA", "Error"}
+        and confianza >= CONFIDENCE_THRESHOLD
+    )
+    color = (0, 255, 0) if reconocido else (0, 165, 255)
+    etiqueta = prediccion.upper() if reconocido else prediccion
 
     cv2.putText(
         frame,

@@ -1,3 +1,4 @@
+import argparse
 import cv2
 import os
 import re
@@ -8,6 +9,20 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 dataset_path = PROJECT_ROOT / "datasets" / "static_signs"
 dataset_dinamico_path = PROJECT_ROOT / "datasets" / "dynamic_signs"
+camera_index = None
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Captura imagenes o secuencias para el dataset.",
+    )
+    parser.add_argument(
+        "--camara",
+        type=int,
+        default=None,
+        help="Indice de camara a usar. Ejemplo: --camara 1",
+    )
+    return parser.parse_args()
 
 
 def nombre_seguro(nombre):
@@ -24,11 +39,37 @@ def crear_carpeta_si_no_existe(path):
 
 
 def abrir_camara():
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("Error: No se puede abrir la camara")
-        return None
-    return cap
+    backends = [
+        (cv2.CAP_DSHOW, "DirectShow"),
+        (cv2.CAP_MSMF, "Media Foundation"),
+        (cv2.CAP_ANY, "Automatico"),
+    ]
+    indices = [camera_index] if camera_index is not None else range(4)
+
+    for indice in indices:
+        for backend, nombre_backend in backends:
+            cap = cv2.VideoCapture(indice, backend)
+            if not cap.isOpened():
+                cap.release()
+                continue
+
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+            for _ in range(20):
+                ret, frame = cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    print(f"Camara activa: indice {indice} ({nombre_backend})")
+                    return cap
+                time.sleep(0.05)
+
+            cap.release()
+
+    if camera_index is None:
+        print("Error: No se pudo leer video desde ninguna camara")
+    else:
+        print(f"Error: No se pudo leer video desde la camara {camera_index}")
+    return None
 
 
 def capturar_sena_estatica():
@@ -378,4 +419,6 @@ def mostrar_menu():
 
 
 if __name__ == "__main__":
+    args = parse_args()
+    camera_index = args.camara
     mostrar_menu()

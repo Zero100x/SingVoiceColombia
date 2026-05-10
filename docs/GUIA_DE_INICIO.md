@@ -1,107 +1,122 @@
 # SingVoiceColombia - Guia de inicio
 
-Esta guia resume como empezar a trabajar con el proyecto `traductor_lsc`.
+Esta guia resume los pasos basicos para instalar, ejecutar y alimentar el dataset del proyecto **SingVoiceColombia**.
 
-El repositorio tiene dos partes principales:
+El repositorio esta organizado en cuatro areas principales:
 
-- `app_android`: aplicacion Android en Kotlin para reconocimiento del abecedario LSC con camara, texto y voz.
-- `scripts`: flujo experimental en Python para capturar imagenes, extraer caracteristicas, entrenar un modelo y probarlo desde computador.
+- `frontend/android`: aplicacion Android nativa en Kotlin para captura, reconocimiento, texto y voz.
+- `ai/scripts`: scripts Python para captura, procesamiento, entrenamiento e inferencia.
+- `datasets`: datos locales para entrenamiento. Esta carpeta no se sube completa a Git.
+- `ai/models`: modelos, metricas y reportes generados localmente.
 
 ## Estado actual del proyecto
 
-La version Android actual ya no es una carpeta pendiente. Es la aplicacion principal del proyecto.
+La aplicacion Android es el frontend principal del prototipo. Actualmente incluye:
 
-Actualmente incluye:
+- pantalla principal con camara
+- flujo de captura de dataset
+- reconocimiento preparado con TensorFlow Lite
+- servicios separados para alfabeto y sennas dinamicas
+- lectura de etiquetas desde `assets`
+- salida de voz para pronunciar el resultado detectado
 
-- pantalla principal con vista de camara
-- solicitud del permiso de camara
-- analisis de imagenes con CameraX
-- servicio preparado para cargar un modelo TensorFlow Lite
-- lectura de etiquetas desde `assets/labels.txt`
-- salida de voz para pronunciar la letra detectada
-
-Punto importante: la app Android espera encontrar este archivo:
+Los modelos `.tflite` se generan desde Python y se copian a:
 
 ```text
-traductor_lsc/app_android/app/src/main/assets/modelo_alfabeto.tflite
+frontend/android/app/src/main/assets/
+|- labels.txt
+|- modelo_alfabeto.tflite
+|- dynamic_labels.txt
+|- modelo_dinamico.tflite
 ```
 
-Si ese modelo no existe, la app compila, pero mostrara que el modelo esta pendiente y no realizara predicciones reales.
+Si un modelo no existe, la app puede compilar, pero el reconocimiento real quedara pendiente para ese flujo.
 
 ## Estructura general
 
 ```text
-traductor_lsc/
-|- GUIA_DE_INICIO.md
-|- app_android/
-|  |- app/
-|  |  |- build.gradle
-|  |  |- src/main/
-|  |     |- AndroidManifest.xml
-|  |     |- assets/
-|  |     |  |- labels.txt
-|  |     |- java/com/singvoicecolombia/datasetcapture/
-|  |     |  |- activities/
-|  |     |  |  |- MainActivity.kt
-|  |     |  |- services/
-|  |     |  |  |- AlphabetRecognitionService.kt
-|  |     |  |- utils/
-|  |     |     |- PermissionHelper.kt
-|  |     |     |- VoiceOutputManager.kt
-|  |     |- res/
-|  |        |- drawable/
-|  |        |- layout/
-|  |        |- values/
-|  |        |- xml/
-|  |- build.gradle
-|  |- gradlew
-|  |- gradlew.bat
-|  |- settings.gradle
-|- dataset/
-|- modelos/
-|- scripts/
-   |- capturar_dataset.py
-   |- detectar_mano.py
-   |- extraer_caracteristicas.py
-   |- entrenar_modelo.py
-   |- usar_modelo.py
+SingVoiceColombia/
+|- ai/
+|  |- scripts/
+|  |  |- capturar_dataset.py
+|  |  |- detectar_mano.py
+|  |  |- extraer_caracteristicas.py
+|  |  |- entrenar_modelo.py
+|  |  |- entrenar_modelo_tflite.py
+|  |  |- entrenar_modelo_dinamico.py
+|  |  |- usar_modelo.py
+|  |  |- usar_modelo_tflite.py
+|  |  |- usar_modelo_dinamico.py
+|  |- models/
+|- backend/
+|- datasets/
+|  |- static_signs/
+|  |- dynamic_signs/
+|  |- archives/
+|- docs/
+|- frontend/
+|  |- android/
+|- resources/
+|- wiki/
+|- requirements.txt
 ```
 
 ## Requisitos
 
-### Para Android
+### Python e IA
 
-- Android Studio instalado
-- SDK de Android configurado
-- JDK 17
-- dispositivo fisico o emulador con camara
-- conexion a internet la primera vez que Gradle descargue dependencias
+- Python 3.10 o superior recomendado.
+- Webcam funcional si vas a capturar desde el computador.
+- Entorno virtual de Python.
+- Dependencias de `requirements.txt`.
 
-La app usa:
+### Android
 
-- Kotlin
-- AndroidX
-- Material Components
-- CameraX
-- TensorFlow Lite
+- Android Studio instalado.
+- SDK de Android configurado.
+- JDK 17.
+- Dispositivo fisico o emulador con camara.
+- Internet la primera vez que Gradle descargue dependencias.
 
-### Para Python
+La app usa Kotlin, AndroidX, Material Components, CameraX y TensorFlow Lite.
 
-- Python 3
-- webcam funcional
-- entorno virtual recomendado
+## Preparar entorno Python
 
-Instala las librerias principales:
+Ejecuta estos comandos desde la raiz del proyecto:
 
-```bash
-pip install opencv-python mediapipe numpy scikit-learn scikit-image joblib
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Cuando el entorno este activo, PowerShell mostrara `(.venv)` al inicio de la linea.
+
+Si PowerShell bloquea la activacion del entorno, usa:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+Para salir del entorno virtual:
+
+```powershell
+deactivate
+```
+
+Nota: `ai/scripts/detectar_mano.py` usa MediaPipe si la API antigua `mp.solutions` esta disponible. En versiones nuevas de MediaPipe puede usar un detector basico con OpenCV como respaldo. Si quieres probar MediaPipe y falta la libreria, instala la dependencia adicional:
+
+```powershell
+pip install mediapipe
 ```
 
 ## Ejecutar la app Android
 
 Desde Android Studio:
 
-1. Abre la carpeta `traductor_lsc/app_android`.
+1. Abre la carpeta `frontend/android`.
 2. Espera la sincronizacion de Gradle.
 3. Verifica que exista `local.properties` con la ruta del SDK.
 4. Conecta un celular o inicia un emulador con camara.
@@ -111,220 +126,384 @@ Desde Android Studio:
 Desde PowerShell:
 
 ```powershell
-cd traductor_lsc\app_android
+cd frontend\android
 .\gradlew.bat assembleDebug
 ```
 
 El APK de depuracion queda en:
 
 ```text
-traductor_lsc/app_android/app/build/outputs/apk/debug/app-debug.apk
+frontend/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Funcionamiento de la app Android
+## Dataset
 
-La pantalla principal esta implementada en:
+El dataset local esta en:
 
 ```text
-app/src/main/java/com/singvoicecolombia/datasetcapture/activities/MainActivity.kt
+datasets/
+|- static_signs/
+|- dynamic_signs/
+|- archives/
 ```
 
-Flujo principal:
+Los archivos del dataset no se versionan en Git para evitar un repositorio pesado y proteger capturas locales.
 
-1. El usuario activa la camara.
-2. `MainActivity` solicita permiso si hace falta.
-3. CameraX abre la vista previa.
-4. Cada cierto intervalo se analiza un frame.
-5. `AlphabetRecognitionService` intenta clasificar la imagen con TensorFlow Lite.
-6. La letra detectada y la confianza se muestran en pantalla.
-7. El boton de voz pronuncia la ultima letra detectada.
+### Sennas estaticas
 
-Archivos clave:
-
-- `MainActivity.kt`: pantalla principal, camara, botones y estado visual.
-- `AlphabetRecognitionService.kt`: carga `modelo_alfabeto.tflite`, lee `labels.txt` y ejecuta inferencia.
-- `PermissionHelper.kt`: validacion del permiso de camara.
-- `VoiceOutputManager.kt`: salida de texto a voz.
-- `activity_main.xml`: interfaz principal.
-- `labels.txt`: etiquetas del alfabeto reconocible.
-
-## Modelo para Android
-
-El servicio de reconocimiento busca el modelo en los assets de Android:
+Usa `datasets/static_signs` para letras, palabras o gestos sin movimiento relevante:
 
 ```text
-app/src/main/assets/modelo_alfabeto.tflite
+datasets/static_signs/
+|- a/
+|  |- a_001.jpg
+|  |- a_002.jpg
+|- b/
+|  |- b_001.jpg
 ```
 
-Las etiquetas actuales estan en:
-
-```text
-app/src/main/assets/labels.txt
-```
-
-El orden de `labels.txt` debe coincidir exactamente con el orden de salida del modelo `.tflite`.
-
-Nota: los scripts actuales de Python entrenan un modelo Random Forest y generan archivos `.pkl`. Esos archivos no se pueden usar directamente en Android como TensorFlow Lite. Para reconocimiento real en la app se necesita entrenar o convertir un modelo compatible con `.tflite`.
-
-## Flujo experimental en Python
-
-Los scripts estan pensados para pruebas desde computador. Ejecutalos desde la carpeta `traductor_lsc/scripts` para que las rutas relativas funcionen correctamente.
+Tambien puedes capturarlas con:
 
 ```powershell
-cd traductor_lsc\scripts
+python ai\scripts\capturar_dataset.py
 ```
 
-### 1. Probar deteccion de mano
-
-```bash
-python detectar_mano.py
-```
-
-Sirve para validar que la webcam funciona y que MediaPipe detecta la mano.
-
-### 2. Capturar dataset
-
-```bash
-python capturar_dataset.py
-```
-
-El script pide el nombre de la sena o clase, por ejemplo:
+Selecciona la opcion:
 
 ```text
-a
-b
-hola
-gracias
-```
-
-Luego guarda imagenes en:
-
-```text
-traductor_lsc/dataset/<nombre_de_la_clase>/
+1 -> Capturar sena estatica
 ```
 
 Controles:
 
-- `ESPACIO`: capturar imagen
-- `ESC`: salir
+- `ESPACIO`: capturar imagen.
+- `ESC`: salir.
 
-### 3. Extraer caracteristicas
+### Sennas dinamicas
 
-```bash
-python extraer_caracteristicas.py
-```
-
-Este script procesa las imagenes de `dataset` y genera:
+Usa `datasets/dynamic_signs` para sennas que requieren movimiento:
 
 ```text
-traductor_lsc/modelos/datos_caracteristicas.pkl
-traductor_lsc/modelos/etiquetas.pkl
+datasets/dynamic_signs/
+|- hola/
+|  |- muestra_001/
+|  |  |- frame_001.jpg
+|  |  |- frame_002.jpg
+|  |- muestra_002/
+|- atencion/
+|  |- muestra_001/
 ```
 
-### 4. Entrenar modelo experimental
+Cada muestra debe tener minimo 8 frames validos. Para mejores resultados, intenta tener al menos 16 frames por muestra, 6 muestras por senna como minimo y, si es posible, unas 30 muestras por clase.
 
-```bash
-python entrenar_modelo.py
+Puedes capturarlas directamente con:
+
+```powershell
+python ai\scripts\capturar_dataset.py
 ```
 
-Genera:
+Selecciona la opcion:
 
 ```text
-traductor_lsc/modelos/modelo_senna.pkl
-traductor_lsc/modelos/encoder_senna.pkl
+2 -> Capturar sena dinamica
 ```
 
-### 5. Probar modelo en tiempo real
+## Convertir un video en frames
 
-```bash
-python usar_modelo.py
+Si tienes un video de una senna, debes convertirlo en imagenes `frame_###.jpg` dentro de una carpeta `muestra_###`.
+
+Ejemplo para la senna `atencion`:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "datasets\dynamic_signs\atencion\muestra_001"
 ```
 
-Este paso usa el modelo `.pkl` desde computador. No corresponde todavia al modelo `.tflite` que necesita Android.
+### Opcion 1: con ffmpeg
 
-## Flujo recomendado de trabajo
+Si tienes `ffmpeg` instalado:
 
-Para compilar y probar la app:
+```powershell
+ffmpeg -i "C:\ruta\del\video.mp4" -vf fps=8 "datasets\dynamic_signs\atencion\muestra_001\frame_%03d.jpg"
+```
+
+Si PowerShell muestra que `ffmpeg` no se reconoce, usa la opcion con Python/OpenCV.
+
+### Opcion 2: con Python/OpenCV
+
+Este metodo funciona con las dependencias del proyecto:
+
+```powershell
+@'
+import cv2
+from pathlib import Path
+
+video_path = Path(r"datasets\dynamic_signs\atencion\muestra_001\muestra_001.m4v")
+out_dir = Path(r"datasets\dynamic_signs\atencion\muestra_001")
+target_fps = 8
+
+cap = cv2.VideoCapture(str(video_path))
+if not cap.isOpened():
+    raise SystemExit(f"No se pudo abrir el video: {video_path}")
+
+source_fps = cap.get(cv2.CAP_PROP_FPS) or 30
+step = max(1, round(source_fps / target_fps))
+
+frame_index = 0
+saved = 0
+
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+
+    if frame_index % step == 0:
+        saved += 1
+        cv2.imwrite(str(out_dir / f"frame_{saved:03d}.jpg"), frame)
+
+    frame_index += 1
+
+cap.release()
+print(f"Frames guardados: {saved}")
+print(f"Carpeta: {out_dir}")
+'@ | python -
+```
+
+Cambia `atencion`, `muestra_001` y el nombre del video segun corresponda.
+
+## Flujo de IA en computador
+
+Ejecuta los scripts desde la raiz del proyecto. Las rutas ya estan preparadas para encontrar `datasets` y `ai/models`.
+
+### 1. Probar deteccion de mano
+
+```powershell
+python ai\scripts\detectar_mano.py
+```
+
+Sirve para validar que la webcam funciona y que MediaPipe detecta la mano.
+Si tu version de MediaPipe no trae `mp.solutions`, el script usa un detector basico con OpenCV para validar camara y contorno de mano.
+En Windows, el script prueba varios indices de camara y backends de OpenCV para evitar fallos cuando `VideoCapture(0)` abre el dispositivo pero no entrega frames.
+
+Para forzar una camara especifica:
+
+```powershell
+python ai\scripts\detectar_mano.py --camara 1
+```
+
+Prueba `--camara 0`, `--camara 1`, `--camara 2` hasta encontrar la camara correcta.
+
+### 2. Capturar dataset
+
+```powershell
+python ai\scripts\capturar_dataset.py
+```
+
+Este script permite capturar sennas estaticas y dinamicas.
+Para capturar con otra camara:
+
+```powershell
+python ai\scripts\capturar_dataset.py --camara 1
+```
+
+### 3. Entrenar modelo de alfabeto para Android
+
+```powershell
+python ai\scripts\entrenar_modelo_tflite.py
+```
+
+Lee imagenes desde:
 
 ```text
-1. Abrir app_android en Android Studio
-2. Compilar el modulo app
-3. Ejecutar en celular o emulador
-4. Verificar permiso de camara
-5. Confirmar si existe modelo_alfabeto.tflite
+datasets/static_signs/
 ```
 
-Para experimentar con IA en computador:
+Genera salidas como:
 
 ```text
-1. Capturar imagenes con capturar_dataset.py
-2. Extraer caracteristicas con extraer_caracteristicas.py
-3. Entrenar con entrenar_modelo.py
-4. Probar con usar_modelo.py
-5. Preparar un modelo TensorFlow Lite para integrarlo en Android
+frontend/android/app/src/main/assets/modelo_alfabeto.tflite
+frontend/android/app/src/main/assets/labels.txt
+ai/models/modelo_alfabeto_metadata.json
 ```
+
+### 4. Probar modelo de alfabeto
+
+```powershell
+python ai\scripts\usar_modelo_tflite.py
+```
+
+Para probarlo con otra camara:
+
+```powershell
+python ai\scripts\usar_modelo_tflite.py --camara 1
+```
+
+El reconocedor puede mostrar `SIN MANO` cuando no detecta una mano dentro del recuadro, o `SIN CONFIANZA` cuando el modelo no diferencia bien la mejor clase de la segunda. Esto evita que siempre fuerce una letra como `A` cuando la imagen no es clara.
+
+### 5. Entrenar modelo dinamico
+
+```powershell
+python ai\scripts\entrenar_modelo_dinamico.py
+```
+
+Lee secuencias desde:
+
+```text
+datasets/dynamic_signs/
+```
+
+Genera salidas como:
+
+```text
+frontend/android/app/src/main/assets/modelo_dinamico.tflite
+frontend/android/app/src/main/assets/dynamic_labels.txt
+ai/models/modelo_dinamico_metadata.json
+```
+
+### 6. Probar modelo dinamico
+
+```powershell
+python ai\scripts\usar_modelo_dinamico.py
+```
+
+Para probarlo con otra camara:
+
+```powershell
+python ai\scripts\usar_modelo_dinamico.py --camara 1
+```
+
+Si aparece `SIN MANO`, centra mejor la mano en el recuadro y mejora la iluminacion. Si aparece `SIN CONFIANZA`, normalmente falta mas dataset o el modelo necesita reentrenarse con muestras parecidas a la camara actual.
+
+## Flujo recomendado
+
+Para experimentar con una nueva senna dinamica:
+
+```text
+1. Crear la carpeta datasets/dynamic_signs/<senna>/muestra_001/
+2. Grabar o copiar el video dentro de esa carpeta.
+3. Convertir el video a frame_001.jpg, frame_002.jpg, etc.
+4. Repetir el proceso con varias muestras.
+5. Entrenar con ai/scripts/entrenar_modelo_dinamico.py.
+6. Probar con ai/scripts/usar_modelo_dinamico.py.
+7. Abrir Android y validar el modelo exportado.
+```
+
+Para trabajar con alfabeto o posturas estaticas:
+
+```text
+1. Guardar imagenes en datasets/static_signs/<clase>/
+2. Entrenar con ai/scripts/entrenar_modelo_tflite.py.
+3. Probar con ai/scripts/usar_modelo_tflite.py.
+4. Validar en Android.
+```
+
+## Buenas practicas de captura
+
+- Mantener iluminacion constante.
+- Usar fondo simple.
+- Centrar la mano o el cuerpo en el encuadre.
+- Evitar videos borrosos o demasiado oscuros.
+- Capturar variaciones de persona, distancia y angulo.
+- Mantener nombres de carpetas simples: minusculas, numeros, `_` o `-`.
+- Documentar procedencia, fecha y condiciones en `docs/dataset.md`.
 
 ## Solucion de problemas
+
+### PowerShell no activa el entorno virtual
+
+Ejecuta:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+### ffmpeg no se reconoce
+
+Significa que `ffmpeg` no esta instalado o no esta en el `PATH`. Puedes convertir el video con Python/OpenCV usando el ejemplo de esta guia.
+
+### MediaPipe no tiene mp.solutions
+
+En versiones nuevas puede aparecer este error:
+
+```text
+AttributeError: module 'mediapipe' has no attribute 'solutions'
+```
+
+El script `ai/scripts/detectar_mano.py` ya contempla ese caso y cambia automaticamente a un detector basico con OpenCV. Ejecutalo de nuevo:
+
+```powershell
+python ai\scripts\detectar_mano.py
+```
+
+### La camara no muestra ventana o no entrega frames
+
+Verifica:
+
+- cerrar Zoom, Teams, navegador u otra app que pueda estar usando la camara
+- permitir acceso a la camara para aplicaciones de escritorio en Windows
+- probar una camara externa o cambiar de puerto USB
+- probar otro indice: `python ai\scripts\detectar_mano.py --camara 1`
+
+### Python no encuentra librerias
+
+Activa el entorno e instala dependencias:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### Python no encuentra el dataset
+
+Ejecuta los scripts desde la raiz del repositorio:
+
+```powershell
+cd "C:\Users\DIEGO\OneDrive\Documents\Universidad\proyecto de grado\SingVoiceColombia"
+python ai\scripts\capturar_dataset.py
+```
+
+### El entrenamiento dinamico dice que hay pocos frames
+
+Cada `muestra_###` debe tener al menos 8 imagenes con extension `.jpg`, `.jpeg` o `.png`.
+
+Ejemplo valido:
+
+```text
+datasets/dynamic_signs/atencion/muestra_001/
+|- frame_001.jpg
+|- frame_002.jpg
+|- frame_003.jpg
+|- frame_004.jpg
+|- frame_005.jpg
+|- frame_006.jpg
+|- frame_007.jpg
+|- frame_008.jpg
+```
+
+### La app muestra que el modelo esta pendiente
+
+Verifica que existan los modelos esperados:
+
+```text
+frontend/android/app/src/main/assets/modelo_alfabeto.tflite
+frontend/android/app/src/main/assets/modelo_dinamico.tflite
+```
+
+Si no existen, entrena el modelo correspondiente desde `ai/scripts`.
 
 ### Gradle no compila
 
 Verifica:
 
-- abrir la carpeta correcta: `traductor_lsc/app_android`
+- abrir la carpeta correcta: `frontend/android`
 - tener Android SDK configurado
 - tener JDK 17
 - tener internet si es la primera sincronizacion
 
-### La app muestra que el modelo esta pendiente
-
-Falta el archivo:
-
-```text
-app/src/main/assets/modelo_alfabeto.tflite
-```
-
-Agrega un modelo TensorFlow Lite compatible con las etiquetas de `labels.txt`.
-
-### La camara no abre en Android
-
-Verifica:
-
-- que el permiso de camara este concedido
-- que el emulador tenga camara configurada
-- que el celular no tenga la camara ocupada por otra app
-
-### Python no encuentra librerias
-
-Instala las dependencias:
-
-```bash
-pip install opencv-python mediapipe numpy scikit-learn scikit-image joblib
-```
-
-### Python no encuentra el dataset
-
-Ejecuta los scripts desde:
-
-```text
-traductor_lsc/scripts
-```
-
-Las rutas de los scripts usan `../dataset` y `../modelos`.
-
-### Baja precision del modelo experimental
-
-Recomendaciones:
-
-- capturar mas imagenes por clase
-- usar buena iluminacion
-- mantener fondo limpio
-- incluir variaciones de angulo y distancia
-- evitar clases con pocas muestras
-
 ## Proximos pasos sugeridos
 
-1. Completar o generar `modelo_alfabeto.tflite`.
-2. Asegurar que `labels.txt` tenga las mismas clases y el mismo orden del modelo.
-3. Validar la inferencia en Android con imagenes reales de camara.
-4. Documentar el proceso exacto de conversion o entrenamiento del modelo TensorFlow Lite.
-5. Limpiar o separar los modelos experimentales `.pkl` de los modelos listos para Android.
+1. Completar mas muestras por cada senna dinamica.
+2. Mantener actualizado `docs/dataset.md` con conteos y condiciones de captura.
+3. Reentrenar los modelos cuando se agreguen nuevas clases.
+4. Validar que `labels.txt` y `dynamic_labels.txt` coincidan con las clases entrenadas.
+5. Probar los modelos exportados en Android con videos reales de camara.
