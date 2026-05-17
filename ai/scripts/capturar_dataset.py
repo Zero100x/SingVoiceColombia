@@ -5,11 +5,22 @@ import re
 import time
 from pathlib import Path
 
+from detectar_mano import (
+    DEFAULT_HAND_LANDMARKER_TASK,
+    cargar_mediapipe_tasks,
+    dibujar_landmarks_tasks,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 dataset_path = PROJECT_ROOT / "datasets" / "static_signs"
 dataset_dinamico_path = PROJECT_ROOT / "datasets" / "dynamic_signs"
 camera_index = None
+hand_model_path = DEFAULT_HAND_LANDMARKER_TASK
+hand_confidence = 0.5
+hand_max_hands = 2
+minimum_required_hands = 1
+allow_without_hand = False
 
 
 def parse_args():
@@ -21,6 +32,34 @@ def parse_args():
         type=int,
         default=None,
         help="Indice de camara a usar. Ejemplo: --camara 1",
+    )
+    parser.add_argument(
+        "--modelo-mano",
+        default=str(DEFAULT_HAND_LANDMARKER_TASK),
+        help="Ruta al archivo hand_landmarker.task usado para mostrar puntos.",
+    )
+    parser.add_argument(
+        "--confianza-mano",
+        type=float,
+        default=0.5,
+        help="Confianza minima de MediaPipe para aceptar mano. Por defecto: 0.5",
+    )
+    parser.add_argument(
+        "--manos",
+        type=int,
+        default=2,
+        help="Cantidad maxima de manos a detectar. Por defecto: 2.",
+    )
+    parser.add_argument(
+        "--manos-minimas",
+        type=int,
+        default=1,
+        help="Cantidad minima de manos requeridas para guardar. Por defecto: 1.",
+    )
+    parser.add_argument(
+        "--permitir-sin-mano",
+        action="store_true",
+        help="Permite guardar muestras aunque MediaPipe no detecte mano.",
     )
     return parser.parse_args()
 
@@ -72,6 +111,101 @@ def abrir_camara():
     return None
 
 
+def crear_detector_mano():
+    detector, mp_module = cargar_mediapipe_tasks(
+        hand_model_path,
+        hand_confidence,
+        hand_max_hands,
+    )
+    if detector is None or mp_module is None:
+        print(
+            "ADVERTENCIA: no se pudo cargar MediaPipe Tasks. "
+            "La captura continuara sin puntos de mano."
+        )
+        print(f"Modelo esperado: {hand_model_path}")
+    else:
+        print(
+            "MediaPipe HandLandmarker activo para mostrar puntos de mano. "
+            f"Max manos: {hand_max_hands}"
+        )
+    return detector, mp_module
+
+
+def cerrar_detector_mano(detector):
+    if detector is not None:
+        detector.close()
+
+
+def dibujar_estado_mano(frame, detector, mp_module):
+    if detector is None or mp_module is None:
+        cv2.putText(
+            frame,
+            "Detector de mano no disponible",
+            (10, frame.shape[0] - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 165, 255),
+            2,
+        )
+        return minimum_required_hands
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    rgb = rgb.copy()
+    mp_image = mp_module.Image(
+        image_format=mp_module.ImageFormat.SRGB,
+        data=rgb,
+    )
+    results = detector.detect(mp_image)
+
+    if not results.hand_landmarks:
+        cv2.putText(
+            frame,
+            "Mano no detectada",
+            (10, frame.shape[0] - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 0, 255),
+            2,
+        )
+        return 0
+
+    for hand_landmarks in results.hand_landmarks:
+        dibujar_landmarks_tasks(frame, hand_landmarks)
+
+    cantidad_manos = len(results.hand_landmarks)
+    cv2.putText(
+        frame,
+        f"Manos detectadas: {cantidad_manos}",
+        (10, frame.shape[0] - 20),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        (0, 255, 0) if cantidad_manos >= minimum_required_hands else (0, 165, 255),
+        2,
+    )
+    return cantidad_manos
+
+
+def manos_suficientes(cantidad_manos, manos_requeridas=None):
+    requeridas = manos_requeridas if manos_requeridas is not None else minimum_required_hands
+    return cantidad_manos >= max(1, int(requeridas))
+
+
+def leer_manos_requeridas(default=1):
+    respuesta = input(
+        "Cuantas manos requiere esta sena? "
+        f"(1 o 2, Enter = {default}): "
+    ).strip()
+    if not respuesta:
+        return default
+
+    try:
+        cantidad = int(respuesta)
+    except ValueError:
+        return default
+
+    return min(max(cantidad, 1), hand_max_hands)
+
+
 def capturar_sena_estatica():
     # Crear carpeta si no existe
     crear_carpeta_si_no_existe(dataset_path)
@@ -100,6 +234,7 @@ def capturar_sena_estatica():
     cap = abrir_camara()
     if cap is None:
         return
+    detector_mano, mp_mano = crear_detector_mano()
 
     # Contador de imagenes capturadas
     captured = 0
@@ -118,6 +253,7 @@ def capturar_sena_estatica():
         frame = cv2.flip(frame, 1)
         frame_limpio = frame.copy()
         h, w, c = frame.shape
+        manos_detectadas = dibujar_estado_mano(frame, detector_mano, mp_mano)
 
         # Hacer la imagen mas clara (mejorar iluminacion)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -165,6 +301,14 @@ def capturar_sena_estatica():
         # Capturar con ESPACIO
         key = cv2.waitKey(1) & 0xFF
         if key == 32:  # ESPACIO
+            if not manos_suficientes(manos_detectadas) and not allow_without_hand:
+                print(
+                    "No se guardo: MediaPipe no detecto suficientes manos. "
+                    f"Detectadas: {manos_detectadas}, requeridas: {minimum_required_hands}."
+                )
+                time.sleep(0.3)
+                continue
+
             img_count += 1
             while os.path.exists(os.path.join(senna_path, f"{img_count}.jpg")):
                 img_count += 1
@@ -179,6 +323,7 @@ def capturar_sena_estatica():
         elif key == 27:
             break
 
+    cerrar_detector_mano(detector_mano)
     cap.release()
     cv2.destroyAllWindows()
 
@@ -199,7 +344,7 @@ def siguiente_muestra_path(senna_path):
         numero += 1
 
 
-def mostrar_cuenta_regresiva(cap, senna, segundos=3):
+def mostrar_cuenta_regresiva(cap, senna, detector_mano, mp_mano, manos_requeridas, segundos=3):
     for restante in range(segundos, 0, -1):
         inicio = time.time()
         while time.time() - inicio < 1:
@@ -208,6 +353,7 @@ def mostrar_cuenta_regresiva(cap, senna, segundos=3):
                 return False
 
             frame = cv2.flip(frame, 1)
+            manos_detectadas = dibujar_estado_mano(frame, detector_mano, mp_mano)
             cv2.putText(
                 frame,
                 f"Senna dinamica: {senna.upper()}",
@@ -219,7 +365,11 @@ def mostrar_cuenta_regresiva(cap, senna, segundos=3):
             )
             cv2.putText(
                 frame,
-                f"Grabando en {restante}...",
+                (
+                    f"Grabando en {restante}..."
+                    if manos_suficientes(manos_detectadas, manos_requeridas) or allow_without_hand
+                    else f"Faltan manos: {manos_detectadas}/{manos_requeridas}"
+                ),
                 (10, 85),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1.4,
@@ -234,7 +384,15 @@ def mostrar_cuenta_regresiva(cap, senna, segundos=3):
     return True
 
 
-def grabar_muestra_dinamica(cap, muestra_path, senna, duracion_segundos):
+def grabar_muestra_dinamica(
+    cap,
+    muestra_path,
+    senna,
+    duracion_segundos,
+    detector_mano,
+    mp_mano,
+    manos_requeridas,
+):
     crear_carpeta_si_no_existe(muestra_path)
 
     frame_count = 0
@@ -246,10 +404,12 @@ def grabar_muestra_dinamica(cap, muestra_path, senna, duracion_segundos):
             break
 
         frame = cv2.flip(frame, 1)
+        frame_limpio = frame.copy()
+        manos_detectadas = dibujar_estado_mano(frame, detector_mano, mp_mano)
         frame_count += 1
 
         filename = os.path.join(muestra_path, f"frame_{frame_count:03d}.jpg")
-        cv2.imwrite(filename, frame)
+        cv2.imwrite(filename, frame_limpio)
 
         cv2.putText(
             frame,
@@ -262,7 +422,11 @@ def grabar_muestra_dinamica(cap, muestra_path, senna, duracion_segundos):
         )
         cv2.putText(
             frame,
-            "Grabando...",
+            (
+                "Grabando..."
+                if manos_suficientes(manos_detectadas, manos_requeridas) or allow_without_hand
+                else f"Grabando: faltan manos {manos_detectadas}/{manos_requeridas}"
+            ),
             (10, 85),
             cv2.FONT_HERSHEY_SIMPLEX,
             1.4,
@@ -338,16 +502,20 @@ def capturar_sena_dinamica():
     except ValueError:
         duracion_segundos = 3.0
 
+    manos_requeridas = leer_manos_requeridas(default=minimum_required_hands)
+
     senna_path = os.path.join(dataset_dinamico_path, senna)
     crear_carpeta_si_no_existe(senna_path)
 
     cap = abrir_camara()
     if cap is None:
         return
+    detector_mano, mp_mano = crear_detector_mano()
 
     print("\nPresiona 'ESPACIO' para grabar una muestra dinamica")
     print("Presiona 'ESC' para salir")
     print(f"Duracion por muestra: {duracion_segundos} segundos")
+    print(f"Manos requeridas para esta sena: {manos_requeridas}")
 
     try:
         while True:
@@ -356,6 +524,7 @@ def capturar_sena_dinamica():
                 break
 
             frame = cv2.flip(frame, 1)
+            manos_detectadas = dibujar_estado_mano(frame, detector_mano, mp_mano)
             cv2.putText(
                 frame,
                 f"Senna dinamica: {senna.upper()}",
@@ -378,9 +547,23 @@ def capturar_sena_dinamica():
 
             key = cv2.waitKey(1) & 0xFF
             if key == 32:  # ESPACIO
+                if not manos_suficientes(manos_detectadas, manos_requeridas) and not allow_without_hand:
+                    print(
+                        "No se grabo: MediaPipe no detecto suficientes manos. "
+                        f"Detectadas: {manos_detectadas}, requeridas: {manos_requeridas}."
+                    )
+                    time.sleep(0.3)
+                    continue
+
                 muestra_path = siguiente_muestra_path(senna_path)
 
-                if not mostrar_cuenta_regresiva(cap, senna):
+                if not mostrar_cuenta_regresiva(
+                    cap,
+                    senna,
+                    detector_mano,
+                    mp_mano,
+                    manos_requeridas,
+                ):
                     break
 
                 frame_count = grabar_muestra_dinamica(
@@ -388,12 +571,16 @@ def capturar_sena_dinamica():
                     muestra_path,
                     senna,
                     duracion_segundos,
+                    detector_mano,
+                    mp_mano,
+                    manos_requeridas,
                 )
                 mostrar_guardado(cap, muestra_path, frame_count)
 
             elif key == 27:  # ESC
                 break
     finally:
+        cerrar_detector_mano(detector_mano)
         cap.release()
         cv2.destroyAllWindows()
 
@@ -421,4 +608,9 @@ def mostrar_menu():
 if __name__ == "__main__":
     args = parse_args()
     camera_index = args.camara
+    hand_model_path = args.modelo_mano
+    hand_confidence = args.confianza_mano
+    hand_max_hands = max(1, int(args.manos))
+    minimum_required_hands = min(max(1, int(args.manos_minimas)), hand_max_hands)
+    allow_without_hand = args.permitir_sin_mano
     mostrar_menu()

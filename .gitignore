@@ -86,3 +86,8 @@ datasets/**
 # Generated documentation output
 docs/_build/
 site/
+
+# JMeter local results
+backend/jmeter/*.jtl
+backend/jmeter/reporte*/
+backend/jmeter/results*/

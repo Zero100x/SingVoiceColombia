@@ -13,10 +13,22 @@ LABELS_FILE = PROJECT_ROOT / "frontend" / "android" / "app" / "src" / "main" / "
 
 ROI_RATIO = 0.75
 CHANNELS_PER_FRAME = 2
+MOTION_SUMMARY_CHANNELS = 6
+MOTION_SEQUENCE_LENGTH = 16
+MIN_MOTION_SCORE = 2.0
 CONFIDENCE_THRESHOLD = 0.65
 MARGIN_THRESHOLD = 0.18
 HAND_MIN_AREA_RATIO = 0.015
 SMOOTHING_WINDOW = 4
+UNKNOWN_LABELS = {
+    "DESCONOCIDO",
+    "UNKNOWN",
+    "NO_ENTRENADA",
+    "SENA_NO_ENTRENADA",
+    "NO_SENA",
+    "SIN_SENA",
+    "NINGUNA",
+}
 
 
 def parse_args():
@@ -135,12 +147,36 @@ def preparar_input(buffer_frames, input_details):
     height = int(shape[1])
     width = int(shape[2])
     channels = int(shape[3])
-    sequence_length = max(1, channels // CHANNELS_PER_FRAME)
+    sequence_length = obtener_frames_requeridos(channels)
 
     if len(buffer_frames) < sequence_length:
-        return None, sequence_length
+        return None, sequence_length, None
 
     selected_frames = buffer_frames[-sequence_length:]
+    motion_score = None
+
+    if channels == MOTION_SUMMARY_CHANNELS:
+        sample, motion_score = preparar_input_movimiento(selected_frames)
+    else:
+        sample = preparar_input_canales_apilados(selected_frames, channels)
+
+    if dtype == np.uint8:
+        scale, zero_point = input_details["quantization"]
+        scale = scale if scale else 1.0
+        sample = sample / scale + zero_point
+        sample = np.clip(sample, 0, 255).astype(np.uint8)
+
+    return np.expand_dims(sample, axis=0).astype(dtype), sequence_length, motion_score
+
+
+def obtener_frames_requeridos(channels):
+    if channels == MOTION_SUMMARY_CHANNELS:
+        return MOTION_SEQUENCE_LENGTH
+
+    return max(1, channels // CHANNELS_PER_FRAME)
+
+
+def preparar_input_canales_apilados(selected_frames, channels):
     stacked_channels = []
     for gray, edges in selected_frames:
         stacked_channels.append(gray)
@@ -149,15 +185,31 @@ def preparar_input(buffer_frames, input_details):
     while len(stacked_channels) < channels:
         stacked_channels.append(selected_frames[-1][0])
 
-    sample = np.stack(stacked_channels[:channels], axis=-1).astype(np.float32)
+    return np.stack(stacked_channels[:channels], axis=-1).astype(np.float32)
 
-    if dtype == np.uint8:
-        scale, zero_point = input_details["quantization"]
-        scale = scale if scale else 1.0
-        sample = sample / scale + zero_point
-        sample = np.clip(sample, 0, 255).astype(np.uint8)
 
-    return np.expand_dims(sample, axis=0).astype(dtype), sequence_length
+def preparar_input_movimiento(selected_frames):
+    primer_gray, primer_edges = selected_frames[0]
+    ultimo_gray, ultimo_edges = selected_frames[-1]
+    diferencias = [
+        np.abs(selected_frames[indice + 1][0] - selected_frames[indice][0])
+        for indice in range(len(selected_frames) - 1)
+    ]
+    movimiento = np.mean(diferencias, axis=0).astype(np.float32)
+    movimiento_edges = crear_canal_bordes(movimiento)
+
+    sample = np.stack(
+        [
+            primer_gray,
+            primer_edges,
+            ultimo_gray,
+            ultimo_edges,
+            movimiento,
+            movimiento_edges,
+        ],
+        axis=-1,
+    ).astype(np.float32)
+    return sample, float(movimiento.mean())
 
 
 def suavizar(predicciones):
@@ -179,6 +231,10 @@ def mejor_prediccion(probabilities):
     return best_index, confidence, margin
 
 
+def es_clase_desconocida(label):
+    return label.strip().upper() in UNKNOWN_LABELS
+
+
 def main():
     args = parse_args()
 
@@ -198,7 +254,7 @@ def main():
     height = int(input_shape[1])
     width = int(input_shape[2])
     channels = int(input_shape[3])
-    sequence_length = max(1, channels // CHANNELS_PER_FRAME)
+    sequence_length = obtener_frames_requeridos(channels)
 
     cap = abrir_camara(args.camara)
     if cap is None:
@@ -240,32 +296,39 @@ def main():
                 if len(buffer_frames) > sequence_length:
                     buffer_frames.pop(0)
 
-                sample, required_frames = preparar_input(buffer_frames, input_details)
+                sample, required_frames, motion_score = preparar_input(buffer_frames, input_details)
 
                 if sample is not None:
-                    interpreter.set_tensor(input_details["index"], sample)
-                    interpreter.invoke()
-
-                    output = interpreter.get_tensor(output_details["index"])[0]
-                    probabilities = softmax(output)
-                    best_index, confidence, margin = mejor_prediccion(probabilities)
-                    label = labels[best_index] if best_index < len(labels) else "?"
-
-                    if confidence >= CONFIDENCE_THRESHOLD and margin >= MARGIN_THRESHOLD:
-                        predicciones_recientes.append((label, confidence))
-                        if len(predicciones_recientes) > SMOOTHING_WINDOW:
-                            predicciones_recientes.pop(0)
-
-                        label, confidence = suavizar(predicciones_recientes)
-                        recognized = confidence >= CONFIDENCE_THRESHOLD
+                    if motion_score is not None and motion_score < MIN_MOTION_SCORE:
+                        predicciones_recientes.clear()
+                        label = "SIN MOVIMIENTO"
                     else:
-                        label = "SIN CONFIANZA"
+                        interpreter.set_tensor(input_details["index"], sample)
+                        interpreter.invoke()
+
+                        output = interpreter.get_tensor(output_details["index"])[0]
+                        probabilities = softmax(output)
+                        best_index, confidence, margin = mejor_prediccion(probabilities)
+                        label = labels[best_index] if best_index < len(labels) else "?"
+
+                        if es_clase_desconocida(label):
+                            predicciones_recientes.clear()
+                            label = "SENA NO ENTRENADA"
+                        elif confidence >= CONFIDENCE_THRESHOLD and margin >= MARGIN_THRESHOLD:
+                            predicciones_recientes.append((label, confidence))
+                            if len(predicciones_recientes) > SMOOTHING_WINDOW:
+                                predicciones_recientes.pop(0)
+
+                            label, confidence = suavizar(predicciones_recientes)
+                            recognized = confidence >= CONFIDENCE_THRESHOLD
+                        else:
+                            label = "SIN CONFIANZA"
 
             x1, y1, x2, y2 = roi_box
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(frame, (0, 0), (720, 145), (0, 0, 0), -1)
 
-            if label == "SIN MANO":
+            if label in {"SIN MANO", "SIN MOVIMIENTO"}:
                 text = label
                 color = (0, 165, 255)
             elif sample is None:

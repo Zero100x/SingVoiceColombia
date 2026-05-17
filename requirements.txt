@@ -3,4 +3,5 @@ numpy>=1.26
 scikit-learn>=1.4
 scikit-image>=0.22
 tensorflow>=2.16
+mediapipe>=0.10.35
 joblib>=1.3

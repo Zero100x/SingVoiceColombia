@@ -35,6 +35,10 @@ Scripts principales:
 
 Este enfoque usa secuencias de frames para sennas con movimiento. Forma parte de las iteraciones futuras del prototipo.
 
+La version actual del modelo dinamico resume 16 frames en 6 canales: frame inicial, bordes iniciales, frame final, bordes finales, movimiento promedio y bordes del movimiento. Esa representacion mejoro el entrenamiento frente a apilar todos los frames como canales y mantiene una entrada pequena para TensorFlow Lite.
+
+El entrenamiento omite automaticamente las clases dinamicas con menos de 6 muestras validas. La recomendacion practica sigue siendo capturar al menos 30 muestras por clase antes de confiar en la prediccion.
+
 ## Artefactos
 
 Los artefactos pesados quedan en `ai/models` y no se suben a Git. Los reportes ligeros pueden versionarse como evidencia academica.

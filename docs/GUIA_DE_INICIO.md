@@ -106,7 +106,7 @@ Para salir del entorno virtual:
 deactivate
 ```
 
-Nota: `ai/scripts/detectar_mano.py` usa MediaPipe si la API antigua `mp.solutions` esta disponible. En versiones nuevas de MediaPipe puede usar un detector basico con OpenCV como respaldo. Si quieres probar MediaPipe y falta la libreria, instala la dependencia adicional:
+Nota: `ai/scripts/detectar_mano.py` usa MediaPipe para mostrar los puntos de la mano. Primero intenta la API antigua `mp.solutions`; si no existe, usa la API nueva MediaPipe Tasks con `hand_landmarker.task`. Solo usa OpenCV como respaldo si MediaPipe no esta instalado o si falta el archivo `.task`. Si falta la libreria, instala la dependencia adicional:
 
 ```powershell
 pip install mediapipe
@@ -179,6 +179,12 @@ Controles:
 - `ESPACIO`: capturar imagen.
 - `ESC`: salir.
 
+Durante la captura se muestran los puntos de MediaPipe sobre la mano. La imagen se guarda limpia, sin los puntos dibujados. El capturador puede detectar hasta 2 manos, pero por defecto solo exige 1 mano para guardar. Si MediaPipe no detecta suficientes manos, el script no guarda la foto para evitar ensuciar el dataset. Si necesitas guardar de todos modos:
+
+```powershell
+python ai\scripts\capturar_dataset.py --permitir-sin-mano
+```
+
 ### Sennas dinamicas
 
 Usa `datasets/dynamic_signs` para sennas que requieren movimiento:
@@ -206,6 +212,20 @@ Selecciona la opcion:
 
 ```text
 2 -> Capturar sena dinamica
+```
+
+Al iniciar la captura dinamica, el script pregunta cuantas manos requiere la senna. Para sennas de dos manos, responde `2`. La vista mostrara los puntos de ambas manos y no empezara a grabar si solo detecta una mano.
+
+Tambien puedes dejarlo preparado desde el comando:
+
+```powershell
+python ai\scripts\capturar_dataset.py --manos 2 --manos-minimas 2
+```
+
+Si solo quieres probar que la camara detecta dos manos:
+
+```powershell
+python ai\scripts\detectar_mano.py --manos 2
 ```
 
 ## Convertir un video en frames
@@ -281,7 +301,7 @@ python ai\scripts\detectar_mano.py
 ```
 
 Sirve para validar que la webcam funciona y que MediaPipe detecta la mano.
-Si tu version de MediaPipe no trae `mp.solutions`, el script usa un detector basico con OpenCV para validar camara y contorno de mano.
+Si tu version de MediaPipe no trae `mp.solutions`, el script usa MediaPipe Tasks con `hand_landmarker.task` y dibuja los 21 puntos de cada mano detectada. Si tampoco puede cargar Tasks, usa un detector basico con OpenCV para validar camara y contorno de mano.
 En Windows, el script prueba varios indices de camara y backends de OpenCV para evitar fallos cuando `VideoCapture(0)` abre el dispositivo pero no entrega frames.
 
 Para forzar una camara especifica:
@@ -292,6 +312,12 @@ python ai\scripts\detectar_mano.py --camara 1
 
 Prueba `--camara 0`, `--camara 1`, `--camara 2` hasta encontrar la camara correcta.
 
+Para detectar dos manos:
+
+```powershell
+python ai\scripts\detectar_mano.py --camara 1 --manos 2
+```
+
 ### 2. Capturar dataset
 
 ```powershell
@@ -299,6 +325,7 @@ python ai\scripts\capturar_dataset.py
 ```
 
 Este script permite capturar sennas estaticas y dinamicas.
+Muestra los 21 puntos de MediaPipe por cada mano detectada para validar que la captura es correcta antes de guardar.
 Para capturar con otra camara:
 
 ```powershell
@@ -309,6 +336,24 @@ python ai\scripts\capturar_dataset.py --camara 1
 
 ```powershell
 python ai\scripts\entrenar_modelo_tflite.py
+```
+
+Antes de entrenar completo, puedes auditar el dataset sin sobrescribir el modelo:
+
+```powershell
+python ai\scripts\entrenar_modelo_tflite.py --solo-auditar
+```
+
+Para una auditoria rapida con MediaPipe:
+
+```powershell
+python ai\scripts\entrenar_modelo_tflite.py --solo-auditar --limite-por-clase 10
+```
+
+El entrenamiento del alfabeto usa MediaPipe Tasks para recortar la mano con `hand_landmarker.task`, igual que la app Android. Si una imagen no tiene mano detectada, se omite para que no ensucie el modelo con cuerpos quietos, caras o fondos. Si necesitas volver al comportamiento anterior:
+
+```powershell
+python ai\scripts\entrenar_modelo_tflite.py --recorte-mano centro
 ```
 
 Lee imagenes desde:
@@ -331,6 +376,12 @@ ai/models/modelo_alfabeto_metadata.json
 python ai\scripts\usar_modelo_tflite.py
 ```
 
+Este script tambien usa MediaPipe para recortar la mano antes de enviar la imagen al modelo, igual que Android. Para probar el modo anterior de recorte central:
+
+```powershell
+python ai\scripts\usar_modelo_tflite.py --recorte-mano centro
+```
+
 Para probarlo con otra camara:
 
 ```powershell
@@ -350,6 +401,19 @@ Lee secuencias desde:
 ```text
 datasets/dynamic_signs/
 ```
+
+El entrenamiento dinamico usa 16 frames de cada muestra para crear una entrada compacta de 6 canales:
+
+```text
+1. frame inicial en escala de grises
+2. bordes del frame inicial
+3. frame final en escala de grises
+4. bordes del frame final
+5. mapa promedio de movimiento
+6. bordes del movimiento
+```
+
+Las clases con menos de 6 muestras validas se omiten automaticamente para no danar el entrenamiento. Para resultados mas estables, usa al menos 30 muestras por senna dinamica.
 
 Genera salidas como:
 
@@ -372,6 +436,8 @@ python ai\scripts\usar_modelo_dinamico.py --camara 1
 ```
 
 Si aparece `SIN MANO`, centra mejor la mano en el recuadro y mejora la iluminacion. Si aparece `SIN CONFIANZA`, normalmente falta mas dataset o el modelo necesita reentrenarse con muestras parecidas a la camara actual.
+
+El modelo dinamico espera recolectar 16 frames antes de mostrar una prediccion, asi que realiza el movimiento completo dentro del recuadro verde.
 
 ## Flujo recomendado
 
@@ -429,7 +495,7 @@ En versiones nuevas puede aparecer este error:
 AttributeError: module 'mediapipe' has no attribute 'solutions'
 ```
 
-El script `ai/scripts/detectar_mano.py` ya contempla ese caso y cambia automaticamente a un detector basico con OpenCV. Ejecutalo de nuevo:
+El script `ai/scripts/detectar_mano.py` ya contempla ese caso y cambia automaticamente a MediaPipe Tasks. Ejecutalo de nuevo:
 
 ```powershell
 python ai\scripts\detectar_mano.py

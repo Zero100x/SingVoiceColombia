@@ -21,6 +21,11 @@ class VoiceOutputManager(context: Context) : TextToSpeech.OnInitListener {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "translation_result")
     }
 
+    fun stop() {
+        if (!isReady) return
+        textToSpeech.stop()
+    }
+
     fun shutdown() {
         textToSpeech.stop()
         textToSpeech.shutdown()

@@ -1,0 +1,81 @@
+{
+  "image_size": [
+    96,
+    96
+  ],
+  "sequence_length": 16,
+  "channels": 6,
+  "windows_per_video_sample": 3,
+  "classes": [
+    "aceptar",
+    "acompanar",
+    "amigo",
+    "familia",
+    "hola",
+    "mama",
+    "desconocido"
+  ],
+  "split_seed": 42,
+  "model_seed": 2026,
+  "architecture": "motion_summary_cnn_from_dynamic_videos",
+  "architecture_note": "Resume cada video en 6 canales: frame inicial, bordes iniciales, frame final, bordes finales, mapa de movimiento y bordes del movimiento.",
+  "input_value_range": "0-255",
+  "normalization": "Rescaling(1/255) inside model",
+  "preprocessing": "center ROI crop 0.75, channels = first grayscale, first edges, last grayscale, last edges, mean absolute motion, motion edges",
+  "roi_ratio": 0.75,
+  "confidence_threshold": 0.65,
+  "min_train_motion_score": 2.0,
+  "use_unknown_class": true,
+  "unknown_class_name": "desconocido",
+  "min_samples_to_train": 6,
+  "skipped_classes": [
+    {
+      "class": "abrazar",
+      "samples": 1
+    },
+    {
+      "class": "aburrido",
+      "samples": 1
+    },
+    {
+      "class": "adelante",
+      "samples": 1
+    },
+    {
+      "class": "ahora",
+      "samples": 1
+    },
+    {
+      "class": "aji",
+      "samples": 1
+    },
+    {
+      "class": "aqui",
+      "samples": 1
+    },
+    {
+      "class": "armario",
+      "samples": 1
+    },
+    {
+      "class": "arriba",
+      "samples": 1
+    },
+    {
+      "class": "atencion",
+      "samples": 2
+    },
+    {
+      "class": "ayer",
+      "samples": 1
+    },
+    {
+      "class": "ayudar",
+      "samples": 1
+    }
+  ],
+  "low_motion_windows_skipped": 498,
+  "test_accuracy": 0.8070175647735596,
+  "test_loss": 0.4637770354747772,
+  "tflite_model": "frontend\\android\\app\\src\\main\\assets\\modelo_dinamico.tflite"
+}
