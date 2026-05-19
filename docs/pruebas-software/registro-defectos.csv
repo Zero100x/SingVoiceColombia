@@ -1,0 +1,6 @@
+ID,Fecha,Caso relacionado,Resumen,Severidad,Estado,Responsable,Accion requerida,Evidencia,Retorno al flujo
+BUG-001,2026-05-18,TC-FUN-003,La app Android no reconoce igual que el script Python,Alta,En Proceso,Diego,Alinear preprocesamiento Android con Python,"DynamicRecognitionService.kt; MainActivity.kt","Volver a To Do si persiste en pruebas finales"
+BUG-002,2026-05-18,TC-FUN-004,El modelo puede predecir senas cuando no hay gesto claro,Alta,Mitigado,Diego,Agregar clase desconocido y umbrales de confianza,"dynamic_labels.txt; reporte_clasificacion_dinamico.txt","Revalidacion con clase desconocido"
+BUG-003,2026-05-18,TC-IA-002,Algunas clases tienen muy pocas muestras o bajo desempeno,Media,Abierto,Diego,Grabar mas muestras de clases debiles,"modelo_dinamico_metadata.json","To Do en Sprint 4"
+BUG-004,2026-05-14,TC-CARGA-001,Plan JMeter inicial no cargaba por propiedades invalidas,Media,Cerrado,Diego,Corregir archivo JMX y parametros,"backend/jmeter/signvoice_load_test.jmx","Revalidado con Summary Report"
+BUG-005,2026-05-19,TC-W3C-001,Validacion W3C pendiente por no existir frontend web productivo,Baja,Pendiente,Diego,Generar evidencia sobre reporte HTML o justificar no aplicabilidad,"Pendiente","To Do"

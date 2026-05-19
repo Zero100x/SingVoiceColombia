@@ -1,0 +1,14 @@
+Requisito,Descripcion,Casos de prueba,Evidencia,Estado
+REQ-01,La app debe cargar el modelo dinamico desde assets,"TC-FUN-001","frontend/android/app/src/main/assets/modelo_dinamico.tflite; dynamic_labels.txt",Cubierto
+REQ-02,La app debe activar camara y permitir reconocimiento,"TC-FUN-002; TC-FUN-003","APK debug; video pendiente",Parcial
+REQ-03,El sistema no debe inventar senas cuando no hay gesto claro,"TC-FUN-004; TC-IA-001; TC-IA-002","reporte_clasificacion_dinamico.txt; matriz_confusion_dinamico.csv",Cubierto
+REQ-04,La app debe reproducir traducciones por voz si el audio automatico esta activo,"TC-FUN-005","MainActivity.kt; video pendiente",Cubierto
+REQ-05,El sistema debe tener pruebas de carga HTTP con GET y POST,"TC-CARGA-001; TC-LAT-001; TC-DISP-001","docs/PRUEBAS_CARGA_JMETER.md; signvoice_load_test.jmx",Cubierto
+REQ-06,El proyecto debe validar rendimiento y tiempos de respuesta,"TC-LAT-001; TC-REN-001","summary.csv; metadata modelo",Cubierto
+REQ-07,El proyecto debe incluir pruebas exploratorias,"TC-EXP-001; TC-EXP-002","Video/captura pendiente",Parcial
+REQ-08,El proyecto debe incluir pruebas de accesibilidad,"TC-ACC-001; TC-ACC-002","Capturas/codigo",Parcial
+REQ-09,El proyecto debe incluir validacion W3C cuando aplique,"TC-W3C-001","Captura validador pendiente",Pendiente
+REQ-10,El proyecto debe incluir pruebas de conectividad tracert,"TC-CON-001","Pantallazo tracert pendiente",Pendiente
+REQ-11,El proyecto debe incluir compatibilidad entre dispositivos o entornos,"TC-COMP-001; TC-COMP-002","APK instalado; script Python",Cubierto
+REQ-12,El proyecto debe incluir seguridad basica,"TC-SEG-001; TC-SEG-002",".gitignore; AndroidManifest pendiente",Parcial
+REQ-13,Las pruebas fallidas deben retornar al flujo To Do,"Registro de defectos","registro-defectos.csv",Cubierto

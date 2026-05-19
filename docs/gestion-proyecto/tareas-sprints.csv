@@ -1,0 +1,30 @@
+ID,Sprint,Tipo,Tarea,Prioridad,Estado,Responsable,Fecha inicio,Fecha fin,Evidencia
+T-001,Sprint 1,Configuracion,Crear estructura inicial del repositorio,Alta,Hecho,Diego,2026-05-07,2026-05-07,README.md
+T-002,Sprint 1,Documentacion,Actualizar guia de inicio,Alta,Hecho,Diego,2026-05-07,2026-05-08,docs/GUIA_DE_INICIO.md
+T-003,Sprint 1,Dataset,Organizar carpetas del dataset por clase,Alta,Hecho,Diego,2026-05-08,2026-05-09,datasets/
+T-004,Sprint 1,IA,Probar deteccion de mano en script Python,Alta,Hecho,Diego,2026-05-09,2026-05-10,ai/scripts/detectar_mano.py
+T-005,Sprint 2,IA,Entrenar modelo inicial de alfabeto/senas,Alta,Hecho,Diego,2026-05-10,2026-05-11,ai/models/
+T-006,Sprint 2,Android,Integrar modelo TFLite en assets,Alta,Hecho,Diego,2026-05-11,2026-05-12,frontend/android/app/src/main/assets/
+T-007,Sprint 2,Android,Configurar camara en app movil,Alta,Hecho,Diego,2026-05-12,2026-05-13,MainActivity.kt
+T-008,Sprint 2,Bugfix,Corregir mensaje de modelo pendiente en app,Alta,Hecho,Diego,2026-05-13,2026-05-13,assets/modelo_dinamico.tflite
+T-009,Sprint 2,Prueba,Crear servidor local para pruebas HTTP,Media,Hecho,Diego,2026-05-14,2026-05-14,backend/load_test_server.py
+T-010,Sprint 2,Prueba,Crear plan JMeter con GET y POST,Alta,Hecho,Diego,2026-05-14,2026-05-14,backend/jmeter/signvoice_load_test.jmx
+T-011,Sprint 2,Prueba,Documentar resultados de carga,Alta,Hecho,Diego,2026-05-14,2026-05-14,docs/PRUEBAS_CARGA_JMETER.md
+T-012,Sprint 3,Dataset,Crear captura multicamara para senas dinamicas,Alta,Hecho,Diego,2026-05-15,2026-05-16,ai/scripts/capturar_dataset_multicamara.py
+T-013,Sprint 3,Dataset,Grabar palabras dinamicas con 3 camaras,Alta,Hecho,Diego,2026-05-16,2026-05-17,datasets/dynamic_signs/
+T-014,Sprint 3,Dataset,Grabar clase desconocido,Alta,Hecho,Diego,2026-05-18,2026-05-18,datasets/dynamic_signs/desconocido/
+T-015,Sprint 3,IA,Reentrenar modelo dinamico con desconocido,Alta,Hecho,Diego,2026-05-18,2026-05-18,ai/models/reporte_clasificacion_dinamico.txt
+T-016,Sprint 3,IA,Alinear inferencia temporal del script,Alta,Hecho,Diego,2026-05-18,2026-05-18,ai/scripts/usar_modelo_dinamico.py
+T-017,Sprint 3,Android,Alinear app con luminancia YUV,Alta,Hecho,Diego,2026-05-18,2026-05-18,DynamicRecognitionService.kt
+T-018,Sprint 3,Android,Compilar e instalar APK actualizado,Alta,Hecho,Diego,2026-05-18,2026-05-18,frontend/android/app/build/outputs/apk/debug/app-debug.apk
+T-019,Sprint 3,UX,Mejorar interfaz de traduccion en vivo,Media,Hecho,Diego,2026-05-17,2026-05-18,activity_main.xml
+T-020,Sprint 3,UX,Agregar resultado sostenido y audio automatico,Media,Hecho,Diego,2026-05-17,2026-05-18,MainActivity.kt
+T-021,Sprint 4,Gestion,Crear backlog del producto para herramienta de gestion,Alta,Hecho,Diego,2026-05-19,2026-05-19,docs/gestion-proyecto/backlog-producto.csv
+T-022,Sprint 4,Gestion,Crear sprints, tareas y fechas,Alta,Hecho,Diego,2026-05-19,2026-05-19,docs/gestion-proyecto/tareas-sprints.csv
+T-023,Sprint 4,Gestion,Montar tablero en GitHub Projects/Trello/Jira,Alta,Pendiente,Diego,2026-05-19,2026-05-20,Enlace del tablero
+T-024,Sprint 4,Prueba,Probar senas principales en app instalada,Alta,Pendiente,Diego,2026-05-20,2026-05-21,Registro de pruebas manuales
+T-025,Sprint 4,IA,Grabar mas muestras de senas con bajo desempeno,Media,Pendiente,Diego,2026-05-20,2026-05-22,datasets/dynamic_signs/
+T-026,Sprint 4,IA,Reentrenar si se agregan nuevas muestras,Media,Pendiente,Diego,2026-05-22,2026-05-23,ai/models/
+T-027,Sprint 4,Documentacion,Actualizar evidencias de pruebas finales,Alta,Pendiente,Diego,2026-05-23,2026-05-24,docs/gestion-proyecto/evidencias-pruebas.md
+T-028,Sprint 4,Presentacion,Preparar sustentacion final,Alta,Pendiente,Diego,2026-05-24,2026-05-25,Guion de exposicion
+T-029,Sprint 4,Gestion,Compartir enlace de acceso al proyecto,Alta,Pendiente,Diego,2026-05-25,2026-05-25,Link publico o con permisos
